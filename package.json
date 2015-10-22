@@ -10,6 +10,10 @@
     "type": "git",
     "url": "git+https://github.com/X-Bird/ThenSuccess.git"
   },
+  "devDependencies": {
+    "jasmine": "latest",
+    "promises-aplus-tests": "latest"
+  },
   "author": "",
   "license": "ISC",
   "bugs": {
