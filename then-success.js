@@ -1,5 +1,5 @@
 (function() {
-	"use strict";
+	"use strict"; // ## 最好把开启严格模式的指令作用于函数中 ，不要用于全局，提高兼容性，预防第三方代码没有考虑这个问题
 
 	/*
 	* 类似这种地方是不是可以不用了解太多，直接就是照抄就行？虽然看得懂
@@ -17,6 +17,8 @@
 		// CommonJS
 	} else if (typeof exports === "object" && typeof module === "object") {
 		module.exports = definition();
+
+		// ?? 为什么 nodejs 加载会落入这个地方？
 
 		// RequireJS
 	} else if (typeof define === "function" && define.amd) {
