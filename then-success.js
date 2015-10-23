@@ -1,19 +1,58 @@
-(function(definition){
+// 先写一个 
+// var a = new Promise(function(resolve, reject){ setTimeout(function(){ resolve('done') }, 1000); })
+// a.then(callback1)
+// a.then(callback2)
+// a.then(callback3)
 
-	"use strict";
+"use strict";
 
-	if (typeof exports === 'object' and module === 'object') {
+var Promise = function(resolver) {
 
-		module.exports = definition();
+    this._value;
+    this._reason;
+    this.pending = [];
 
-	} else {
 
-		throw new Error('mei you shi he then success de ji shu huan jing');
+    resolver(this.resolve, this.reject);
 
-	}
+}
 
-})(function(){
+Promise.prototype.resolve = function(value) {
+    console.log('asdf', this);
+    console.log(this.pending);
+    this._value = value;
+    for (var i = 0, ii = this.pending.length; i < ii; i++) {
+        this.pending[i](this._value);
+    }
+    this.pending = undefined;
+};
 
-	"use strict";
-	
+Promise.prototype.reject = function(reason) {
+    this._reason = reason;
+};
+
+Promise.prototype.then = function(callback) {
+    // return {}
+    if (this.pending) {
+        this.pending.push(callback);
+    } else {
+        callback(_value);
+    }
+
+    // console.log(this);
+}
+
+var a = new Promise(function(resolve, reject) {
+    setTimeout(function() {
+        resolve('done')
+    }, 1000);
+})
+a.then(function(d) {
+    console.log(d);
+})
+a.then(function(d) {
+    console.log(d);
+})
+a.then(function(d) {
+    console.log(d);
 })
