@@ -109,7 +109,7 @@ a()
 //     this.pending = [];
 
 
-//     resolver(this.resolve, this.reject);
+//     resolver(this.resolve.bind(this), this.reject.bind(this));
 
 // }
 

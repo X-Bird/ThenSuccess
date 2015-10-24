@@ -11,6 +11,7 @@
     "url": "git+https://github.com/X-Bird/ThenSuccess.git"
   },
   "devDependencies": {
+    "mocha": "latest",
     "jasmine": "latest",
     "promises-aplus-tests": "latest"
   },
