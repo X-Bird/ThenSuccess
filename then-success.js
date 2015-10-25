@@ -1,14 +1,14 @@
 var Utils = {
-    runAsync: function (fn) {
+    runAsync: function(fn) {
         setTimeout(fn, 0);
     },
-    isFunction: function (val) {
+    isFunction: function(val) {
         return val && typeof val === "function";
     },
-    isObject: function (val) {
+    isObject: function(val) {
         return val && typeof val === "object";
     },
-    isThenSuccess: function (val) {
+    isThenSuccess: function(val) {
         return val && val.constructor === ThenSuccess;
     }
 };
@@ -19,17 +19,47 @@ var ThenSuccess = function(resolver) {
 
     "use strict";
 
-    this._value;
-    this._reason;
-    this.pending = [];
-    this.failedCallback = [];
+    // 这样就不用bind了
+    var that = this;
 
+    this.value = null;
+    this.state = 0; // 0: pending, 1: fullfilled, -1: rejected
+    this.queue = [];
+    this.handlers = {
+        fulfill: null,
+        reject: null
+    };
 
-    resolver(this.resolve.bind(this), this.reject.bind(this));
+    if (resolver) {
+        resolver(function(value) {
+            Resolve(that, value);
+        }, function(reason) {
+            that.reject(reason);
+        });
+    }
 
 }
 
-ThenSuccess.prototype.resolve = function(value) {
+function Resolve (promise, x) {
+// ThenSuccess.prototype.resolve = function(value) {
+
+    // promise A+ 2.3.1
+    if (promise === x) {
+        // todo: reject here
+        throw new TypeError("The promise and its value refer to the same object");
+    } else if (Utils.isThenSuccess(x)) {
+
+         if (x.state === 0) {
+            x.then(function (val) {
+                Resolve(promise, val);
+            }, function (reason) {
+                // todo: 记录reason, turn rejected
+            });
+        } else {
+            // 如果不是 pending， 转化状态
+            // todo: turn state here
+        }
+    }
 
     this._value = value;
     for (var i = 0, ii = this.pending.length; i < ii; i++) {
@@ -45,7 +75,7 @@ ThenSuccess.prototype.reject = function(reason) {
 ThenSuccess.prototype.then = function(onFulfilled, onRejected) {
     // return {}
 
-    if ( Utils.isFunction(onFulfilled) ) {
+    if (Utils.isFunction(onFulfilled)) {
         if (this.pending) {
             this.pending.push(onFulfilled);
         } else {
@@ -53,7 +83,7 @@ ThenSuccess.prototype.then = function(onFulfilled, onRejected) {
         }
     }
 
-    if ( Utils.isFunction(onRejected) ) {
+    if (Utils.isFunction(onRejected)) {
         if (this.failedCallback) {
             this.failedCallback.push(onFulfilled);
         } else {
