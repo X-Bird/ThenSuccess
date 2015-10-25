@@ -1,4 +1,21 @@
-var Promise = function(resolver) {
+var Utils = {
+    runAsync: function (fn) {
+        setTimeout(fn, 0);
+    },
+    isFunction: function (val) {
+        return val && typeof val === "function";
+    },
+    isObject: function (val) {
+        return val && typeof val === "object";
+    },
+    isThenSuccess: function (val) {
+        return val && val.constructor === ThenSuccess;
+    }
+};
+
+
+
+var ThenSuccess = function(resolver) {
 
     "use strict";
 
@@ -12,7 +29,7 @@ var Promise = function(resolver) {
 
 }
 
-Promise.prototype.resolve = function(value) {
+ThenSuccess.prototype.resolve = function(value) {
 
     this._value = value;
     for (var i = 0, ii = this.pending.length; i < ii; i++) {
@@ -21,14 +38,14 @@ Promise.prototype.resolve = function(value) {
     this.pending = undefined;
 };
 
-Promise.prototype.reject = function(reason) {
+ThenSuccess.prototype.reject = function(reason) {
     this._reason = reason;
 };
 
-Promise.prototype.then = function(onFulfilled, onRejected) {
+ThenSuccess.prototype.then = function(onFulfilled, onRejected) {
     // return {}
 
-    if (onFulfilled && typeof onFulfilled === 'function') {
+    if ( Utils.isFunction(onFulfilled) ) {
         if (this.pending) {
             this.pending.push(onFulfilled);
         } else {
@@ -36,7 +53,7 @@ Promise.prototype.then = function(onFulfilled, onRejected) {
         }
     }
 
-    if (onRejected && typeof onRejected === 'function') {
+    if ( Utils.isFunction(onRejected) ) {
         if (this.failedCallback) {
             this.failedCallback.push(onFulfilled);
         } else {
@@ -46,12 +63,12 @@ Promise.prototype.then = function(onFulfilled, onRejected) {
 
 }
 
-Promise.prototype.fail = function(rejectedHandler) {}
+ThenSuccess.prototype.fail = function(rejectedHandler) {}
 
-Promise.prototype.spread = function(onFulfilled, onRejected) {}
-Promise.prototype.catch = function() {}
+ThenSuccess.prototype.spread = function(onFulfilled, onRejected) {}
+ThenSuccess.prototype.catch = function() {}
 
-var a = new Promise(function(resolve, reject) {
+var a = new ThenSuccess(function(resolve, reject) {
     setTimeout(function() {
         resolve('done')
     }, 1000);
