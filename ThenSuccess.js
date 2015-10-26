@@ -10,6 +10,9 @@
 var Utils = {
 	isFunction: function(x) {
 		return x && typeof x === 'function';
+	},
+	runAsync: function(fn) {
+		setTimeout(fn, 0);
 	}
 }
 
@@ -19,11 +22,19 @@ var ThenSuccess = function ThenSuccess(resolver) {
 
 	that._state = 0; // peding: 0 fullfiled: 1 rejected: -1
 	that._value;
+	that._reason;
 	that._fullfilledCallbacks = [];
 	that._rejectedCallbacks = [];
 
 
-	resolver(that.resolve.bind(this));
+	try {
+		resolver(that.resolve.bind(this));
+	}
+	catch(e) {
+		// todo: reject with a reason here
+	}
+
+
 
 }
 
@@ -39,15 +50,42 @@ ThenSuccess.prototype.isFullfiled = function() {
 	return this._state === 1;
 }
 
+ThenSuccess.prototype.afterTransition = function() {
+
+	var queue;
+
+	if (this.isPending()) return;
+
+	this.isFullfiled()? this._rejectedCallbacks = undefined : this._fullfilledCallbacks = undefined;
+
+
+	queue = this._rejectedCallbacks || this._fullfilledCallbacks;
+
+	while(queue.length) {
+		var queuePromise = queue.shift();
+
+		try {
+			queuePromise(this._value);
+		}
+		catch(e) {
+			// todo: rejected in new promise?
+
+			continue;
+		}
+
+		// todo: chain next promise with this._value?
+	}
+
+}
+
 // transTo('fullfilled')
 // transTo('rejected')
 ThenSuccess.prototype.transTo = function(status) {
-	if (status && status === 'fullfilled') {
-		this._state = 1;
-	}
-	if (status && status === 'rejected') {
-		this._state = -1;
-	}
+
+	this._state = status === 'fullfilled'? 1:-1;
+	
+	runAsync(this.afterTransition,bind(this));
+
 }
 
 ThenSuccess.prototype.resolve = function(x) {
@@ -61,17 +99,17 @@ ThenSuccess.prototype.resolve = function(x) {
 	else if (typeof x === 'ThenSuccess') {
 		// adopt its state
 		// 2.3.2.1
-		if (x.isPending) {
+		if (x.isPending()) {
 			// todo: remain pending
 		}
 
 		// 2.3.2.2
-		if (x.isFullfiled) {
+		if (x.isFullfiled()) {
 			// todo: fullfilled this promise with the same value
 		}
 
 		// 2.3.2.3
-		if (x.isRejected) {
+		if (x.isRejected()) {
 			// todo: reject this promise with the same reason
 		}
 	}
