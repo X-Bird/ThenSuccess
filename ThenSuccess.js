@@ -11,6 +11,9 @@ var Utils = {
 	isFunction: function(x) {
 		return x && typeof x === 'function';
 	},
+	isObject: function(x) {
+		return x && typeof x === 'object';
+	},
 	runAsync: function(fn) {
 		setTimeout(fn, 0);
 	}
@@ -98,6 +101,7 @@ ThenSuccess.prototype.transTo = function(status) {
 
 }
 
+// todo: this function need to be invoked recursively, be aware of stack overflow or redundancy of slef executions
 ThenSuccess.prototype.resolve = function(x) {
 
 	// 2.3.1
@@ -131,14 +135,37 @@ ThenSuccess.prototype.resolve = function(x) {
 	}
 
 	// 2.3.3
+	// I think ... here may be the scenario of dealing with thenable ?
 	else if (typeof x === 'object' || typeof x === 'function') {
 
-		// 2.3.3.1 这个地方不解
-		// if (x.then) {}
+		// 2.3.3.1
+		// why here have to let then be x.then...? need asking vilic
 
-		// 2.3.3.2 这个地方不解
+		try {
+			var thenHandler = x.then;
 
-		// 2.3.3.3 // 这里一大块不解
+			// 2.3.3.3 // 这里一大块不解
+			if (Utils.isFunction(thenHandler)) {
+				thenHandler.call(x, function(result){
+					// todo: mao shi wo hao xiang xu yao zai zhe ge di fang resolve yi xie dong xi 
+				}, function(reason){
+					// todo: reject here
+				})
+			}
+			// 2.3.3.4 
+			// if then is not a function, fufill promise with x
+			else {
+				this._value = x;
+				this.transTo('fullfilled');
+			}
+		}
+		catch (e) {
+			// todo: this.rejectDirectly
+		}
+
+		
+
+		
 	}
 	// 2.3.4
 	else if (typeof x !== 'object' && typeof x !== 'function') {
