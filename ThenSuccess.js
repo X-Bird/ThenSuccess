@@ -56,7 +56,9 @@ ThenSuccess.prototype.afterTransition = function() {
 
 	if (this.isPending()) return;
 
-	this.isFullfiled()? this._rejectedCallbacks = undefined : this._fullfilledCallbacks = undefined;
+	this.isFullfiled()? 
+		this._rejectedCallbacks = undefined :
+	    this._fullfilledCallbacks = undefined;
 
 
 	queue = this._rejectedCallbacks || this._fullfilledCallbacks;
@@ -84,7 +86,7 @@ ThenSuccess.prototype.transTo = function(status) {
 
 	this._state = status === 'fullfilled'? 1:-1;
 	
-	runAsync(this.afterTransition,bind(this));
+	Utils.runAsync(this.afterTransition.bind(this));
 
 }
 

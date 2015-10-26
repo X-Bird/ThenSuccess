@@ -1,0 +1,27 @@
+var ThenSuccess = require('../ThenSuccess');
+
+var counter = 0;
+var p = new ThenSuccess(function(resolve) {
+	setTimeout(function(){
+		console.log('resolved question:%d after 1 second', ++counter);
+		resolve(++counter);
+	}, 1000);
+});
+
+p.then(function(x){
+	console.log('after resolve question:%d, do something', counter);
+});
+p.then(function(x){
+	console.log('after resolve question:%d, do something', counter);
+});
+p.then(function(x){
+	console.log('after resolve question:%d, do something', counter);
+});
+p.then(function(x){
+	console.log('after resolve question:%d, do something', counter);
+});
+p.then(function(x){
+	console.log('after resolve question:%d, do something', counter);
+});
+
+console.log('test done');
