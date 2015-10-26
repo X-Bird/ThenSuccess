@@ -20,7 +20,7 @@ var Utils = {
 var ThenSuccess = function ThenSuccess(resolver) {
 	var that = this;
 
-	that._state = 0; // peding: 0 fullfiled: 1 rejected: -1
+	that._state = 0; // peding: 0 fullfilled: 1 rejected: -1
 	that._value;
 	that._reason;
 	that._fullfilledCallbacks = [];
@@ -46,8 +46,16 @@ ThenSuccess.prototype.isRejected = function() {
 	return this._state === -1;
 }
 
-ThenSuccess.prototype.isFullfiled = function() {
+ThenSuccess.prototype.isFullfilled = function() {
 	return this._state === 1;
+}
+
+ThenSuccess.prototype.fullfillDirectly = function() {
+	// todo: 
+}
+
+ThenSuccess.prototype.rejectDirectly = function() {
+	// todo: 
 }
 
 ThenSuccess.prototype.afterTransition = function() {
@@ -56,7 +64,7 @@ ThenSuccess.prototype.afterTransition = function() {
 
 	if (this.isPending()) return;
 
-	this.isFullfiled()? 
+	this.isFullfilled()? 
 		this._rejectedCallbacks = undefined :
 	    this._fullfilledCallbacks = undefined;
 
@@ -94,7 +102,10 @@ ThenSuccess.prototype.resolve = function(x) {
 
 	// 2.3.1
 	if (this === x) {
-		// todo: reject promise with a TypeError as the reason
+		// reject promise with a TypeError as the reason
+		// I think... it's better to reject here directly
+		this._reason = new TypeError('...');
+		this.transTo('rejected');
 	}
 
 	// 2.3.2
@@ -102,17 +113,20 @@ ThenSuccess.prototype.resolve = function(x) {
 		// adopt its state
 		// 2.3.2.1
 		if (x.isPending()) {
-			// todo: remain pending
+			// remain pending
 		}
 
 		// 2.3.2.2
-		if (x.isFullfiled()) {
-			// todo: fullfilled this promise with the same value
+		if (x.isFullfilled()) {
+			// fullfilled this promise with the same value
+			x.fullfillDirectly(this._value);
+			
 		}
 
 		// 2.3.2.3
 		if (x.isRejected()) {
-			// todo: reject this promise with the same reason
+			// eject this promise with the same reason
+			x.rejectDirectly(this._reason);
 		}
 	}
 
@@ -135,13 +149,13 @@ ThenSuccess.prototype.resolve = function(x) {
 
 
 
-ThenSuccess.prototype.then = function(onFullfiled, onRejected) {
-	if (Utils.isFunction(onFullfiled)) {
+ThenSuccess.prototype.then = function(onFullfilled, onRejected) {
+	if (Utils.isFunction(onFullfilled)) {
 		if (this.isPending()) {
-			this._fullfilledCallbacks.push(onFullfiled);
+			this._fullfilledCallbacks.push(onFullfilled);
 		}
 		else {
-			onFullfiled(this._value);
+			onFullfilled(this._value);
 		}
 	}
 }
