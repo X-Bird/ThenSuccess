@@ -28,6 +28,7 @@ var ThenSuccess = function ThenSuccess(resolver) {
 	that._reason;
 	that._fullfilledCallbacks = [];
 	that._rejectedCallbacks = [];
+	that._promiseQueue = [];
 
 
 	try {
@@ -53,32 +54,39 @@ ThenSuccess.prototype.isFullfilled = function() {
 	return this._state === 1;
 }
 
-ThenSuccess.prototype.fullfillDirectly = function() {
-	// todo: 
+ThenSuccess.prototype.fullfillDirectly = function(value) {
+
+	this._value = value;
+	this.transTo('fullfilled');
+
 }
 
-ThenSuccess.prototype.rejectDirectly = function() {
-	// todo: 
+ThenSuccess.prototype.rejectDirectly = function(reason) {
+
+	this._reason = reason;
+	this.transTo('rejected');
+
 }
 
 ThenSuccess.prototype.afterTransition = function() {
 
-	var queue;
+	var callbackQueue;
 
 	if (this.isPending()) return;
 
-	this.isFullfilled()? 
-		this._rejectedCallbacks = undefined :
+	if (this.isFullfilled())
+		this._rejectedCallbacks = undefined;
+	else
 	    this._fullfilledCallbacks = undefined;
 
 
-	queue = this._rejectedCallbacks || this._fullfilledCallbacks;
+	callbackQueue = this._rejectedCallbacks || this._fullfilledCallbacks;
 
-	while(queue.length) {
-		var queuePromise = queue.shift();
+	while(callbackQueue.length) {
+		var c = callbackQueue.shift();
 
 		try {
-			queuePromise(this._value);
+			c(this._value);
 		}
 		catch(e) {
 			// todo: rejected in new promise?
@@ -86,8 +94,31 @@ ThenSuccess.prototype.afterTransition = function() {
 			continue;
 		}
 
-		// todo: chain next promise with this._value?
+		
 	}
+
+	while(this._promiseQueue.length) {
+		var promise = this._promiseQueue.shift();
+
+		try {
+			if (this.isFullfilled()) {
+				promise.fullfillDirectly(this._value);
+			}
+			else {
+				promise.rejectDirectly(this._reason);
+			}
+		}
+		catch(e) {
+			// todo: ???
+
+			continue;
+		}
+		
+	}
+
+	// for preventing memory leaking ?? 不知道有没有效，有没有必要。。。想不清楚。。。卧槽
+	this._promiseQueue = undefined;
+
 
 }
 
@@ -108,12 +139,12 @@ ThenSuccess.prototype.resolve = function(x) {
 	if (this === x) {
 		// reject promise with a TypeError as the reason
 		// I think... it's better to reject here directly
-		this._reason = new TypeError('...');
-		this.transTo('rejected');
+
+		this.rejectDirectly(new TypeError('...'));
 	}
 
 	// 2.3.2
-	else if (typeof x === 'ThenSuccess') {
+	else if (x instanceof ThenSuccess) {
 		// adopt its state
 		// 2.3.2.1
 		if (x.isPending()) {
@@ -138,53 +169,82 @@ ThenSuccess.prototype.resolve = function(x) {
 	// I think ... here may be the scenario of dealing with thenable ?
 	else if (typeof x === 'object' || typeof x === 'function') {
 
+		var thenHandler, 
+			called = false;
+
 		// 2.3.3.1
 		// why here have to let then be x.then...? need asking vilic
 
 		try {
 			var thenHandler = x.then;
 
-			// 2.3.3.3 // 这里一大块不解
+			// 2.3.3.3 // 这个地方有待深化理解
 			if (Utils.isFunction(thenHandler)) {
 				thenHandler.call(x, function(result){
-					// todo: mao shi wo hao xiang xu yao zai zhe ge di fang resolve yi xie dong xi 
+			
+					if (!called) {
+						this.resolve(y);
+						called = true;
+					}
+
 				}, function(reason){
-					// todo: reject here
-				})
+					if (!called) {
+						this.reject(reason);
+						called = true;
+					}
+				});
 			}
 			// 2.3.3.4 
 			// if then is not a function, fufill promise with x
 			else {
-				this._value = x;
-				this.transTo('fullfilled');
+				this.fullfillDirectly(x);
+				called = true;
 			}
 		}
 		catch (e) {
-			// todo: this.rejectDirectly
-		}
+			// this.rejectDirectly
 
-		
+			if (!called) {
+				this.rejectDirectly(e);
+				called = true;
+			}
+		}
 
 		
 	}
 	// 2.3.4
 	else if (typeof x !== 'object' && typeof x !== 'function') {
-		this._value = x;
-		this.transTo('fullfilled');
+		this.fullfillDirectly(x);
 	}
 }
 
 
 
 ThenSuccess.prototype.then = function(onFullfilled, onRejected) {
+
+	var nextPromise = new ThenSuccess();
+
 	if (Utils.isFunction(onFullfilled)) {
 		if (this.isPending()) {
 			this._fullfilledCallbacks.push(onFullfilled);
 		}
-		else {
-			onFullfilled(this._value);
-		}
+		// else {
+		// 	onFullfilled(this._value);
+		// }
 	}
+
+	if (Utils.isFunction(onRejected)) {
+		if (this.isPending()) {
+			this._rejectedCallbacks.push(onRejected);
+		}
+		// else {
+		// 	onRejected(this._value);
+		// }
+	}
+
+	this._promiseQueue.push(nextPromise);
+
+	return nextPromise;
 }
 
 
