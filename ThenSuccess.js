@@ -61,7 +61,7 @@ ThenSuccess.prototype.fullfillDirectly = function(value) {
 
 }
 
-ThenSuccess.prototype.rejectDirectly = function(reason) {
+ThenSuccess.prototype.reject = function(reason) {
 
 	this._reason = reason;
 	this.transTo('rejected');
@@ -105,7 +105,7 @@ ThenSuccess.prototype.afterTransition = function() {
 				promise.fullfillDirectly(this._value);
 			}
 			else {
-				promise.rejectDirectly(this._reason);
+				promise.reject(this._reason);
 			}
 		}
 		catch(e) {
@@ -132,9 +132,6 @@ ThenSuccess.prototype.transTo = function(status) {
 
 }
 
-ThenSuccess.prototype.reject = function(reason) {
-	
-}
 
 // todo: this function need to be invoked recursively, be aware of stack overflow or redundancy of slef executions
 ThenSuccess.prototype.resolve = function(x) {
@@ -144,7 +141,7 @@ ThenSuccess.prototype.resolve = function(x) {
 		// reject promise with a TypeError as the reason
 		// I think... it's better to reject here directly
 
-		this.rejectDirectly(new TypeError('...'));
+		this.reject(new TypeError('...'));
 	}
 
 	// 2.3.2
@@ -165,7 +162,7 @@ ThenSuccess.prototype.resolve = function(x) {
 		// 2.3.2.3
 		if (x.isRejected()) {
 			// eject this promise with the same reason
-			x.rejectDirectly(this._reason);
+			x.reject(this._reason);
 		}
 	}
 
@@ -206,10 +203,10 @@ ThenSuccess.prototype.resolve = function(x) {
 			}
 		}
 		catch (e) {
-			// this.rejectDirectly
+			// this.reject
 
 			if (!called) {
-				this.rejectDirectly(e);
+				this.reject(e);
 				called = true;
 			}
 		}
