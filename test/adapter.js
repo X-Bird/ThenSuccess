@@ -1,6 +1,6 @@
-var ThenSuccess = require('../then-success');
+var ThenSuccess = require('../ThenSuccess');
 
-var Promise = ThenSuccess.Promise;
+var Promise = ThenSuccess;
 
 module.exports = {
 

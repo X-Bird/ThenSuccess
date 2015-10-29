@@ -132,6 +132,10 @@ ThenSuccess.prototype.transTo = function(status) {
 
 }
 
+ThenSuccess.prototype.reject = function(reason) {
+	
+}
+
 // todo: this function need to be invoked recursively, be aware of stack overflow or redundancy of slef executions
 ThenSuccess.prototype.resolve = function(x) {
 
