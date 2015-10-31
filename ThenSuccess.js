@@ -26,15 +26,22 @@ var ThenSuccess = function ThenSuccess(resolver) {
 	that._state = 0; // peding: 0 fullfilled: 1 rejected: -1
 	that._value;
 	that._reason;
-	that._fullfilledCallbacks = [];
-	that._rejectedCallbacks = [];
+
+	// [ { 
+	// 	promise: p,
+	// 	onFullfilledCallback: [fn, fn, fn...],
+	// 	onRejectedCallback: [fn, fn, fn...] 
+	// },... ]
+	that._queue = [];
+	that._preFullfilledCbs = [];
+	that._preRejectedCbs = [];
+
 	that._promiseQueue = [];
 
 
 	try {
 		resolver(that.resolve.bind(this));
-	}
-	catch(e) {
+	} catch (e) {
 		// todo: reject with a reason here
 	}
 
@@ -70,53 +77,36 @@ ThenSuccess.prototype.reject = function(reason) {
 
 ThenSuccess.prototype.afterTransition = function() {
 
-	var callbackQueue;
 
 	if (this.isPending()) return;
 
-	if (this.isFullfilled())
-		this._rejectedCallbacks = undefined;
-	else
-	    this._fullfilledCallbacks = undefined;
+	while (this._promiseQueue.length) {
 
-
-	callbackQueue = this._rejectedCallbacks || this._fullfilledCallbacks;
-
-	while(callbackQueue.length) {
-		var c = callbackQueue.shift();
-
-		try {
-			c(this._value);
-		}
-		catch(e) {
-			// todo: rejected in new promise?
-
-			continue;
-		}
-
-		
-	}
-
-	while(this._promiseQueue.length) {
 		var promise = this._promiseQueue.shift();
 
 		try {
 			if (this.isFullfilled()) {
-				promise.fullfillDirectly(this._value);
-			}
-			else {
+
+				while (promise._preFullfilledCbs.length) {
+					var preFullfilledCb = promise._preFullfilledCbs.shift();
+
+					var result = preFullfilledCb(this._value);
+
+					// todo: 判断返回值类型
+				}
+
+				promise.resolve(this._value);
+			} else {
 				promise.reject(this._reason);
 			}
-		}
-		catch(e) {
+		} catch (e) {
 			// todo: ???
 
 			continue;
 		}
-		
+
 	}
 
-	// for preventing memory leaking ?? 不知道有没有效，有没有必要。。。想不清楚。。。卧槽
 	this._promiseQueue = undefined;
 
 
@@ -126,8 +116,8 @@ ThenSuccess.prototype.afterTransition = function() {
 // transTo('rejected')
 ThenSuccess.prototype.transTo = function(status) {
 
-	this._state = status === 'fullfilled'? 1:-1;
-	
+	this._state = status === 'fullfilled' ? 1 : -1;
+
 	Utils.runAsync(this.afterTransition.bind(this));
 
 }
@@ -156,7 +146,7 @@ ThenSuccess.prototype.resolve = function(x) {
 		if (x.isFullfilled()) {
 			// fullfilled this promise with the same value
 			x.fullfillDirectly(this._value);
-			
+
 		}
 
 		// 2.3.2.3
@@ -170,7 +160,7 @@ ThenSuccess.prototype.resolve = function(x) {
 	// I think ... here may be the scenario of dealing with thenable ?
 	else if (typeof x === 'object' || typeof x === 'function') {
 
-		var thenHandler, 
+		var thenHandler,
 			called = false;
 
 		// 2.3.3.1
@@ -181,14 +171,14 @@ ThenSuccess.prototype.resolve = function(x) {
 
 			// 2.3.3.3 // 这个地方有待深化理解
 			if (Utils.isFunction(thenHandler)) {
-				thenHandler.call(x, function(result){
-			
+				thenHandler.call(x, function(result) {
+
 					if (!called) {
 						this.resolve(y);
 						called = true;
 					}
 
-				}, function(reason){
+				}, function(reason) {
 					if (!called) {
 						this.reject(reason);
 						called = true;
@@ -201,8 +191,7 @@ ThenSuccess.prototype.resolve = function(x) {
 				this.fullfillDirectly(x);
 				called = true;
 			}
-		}
-		catch (e) {
+		} catch (e) {
 			// this.reject
 
 			if (!called) {
@@ -211,7 +200,7 @@ ThenSuccess.prototype.resolve = function(x) {
 			}
 		}
 
-		
+
 	}
 	// 2.3.4
 	else if (typeof x !== 'object' && typeof x !== 'function') {
@@ -227,20 +216,14 @@ ThenSuccess.prototype.then = function(onFullfilled, onRejected) {
 
 	if (Utils.isFunction(onFullfilled)) {
 		if (this.isPending()) {
-			this._fullfilledCallbacks.push(onFullfilled);
+			nextPromise._preFullfilledCbs.push(onFullfilled);
 		}
-		// else {
-		// 	onFullfilled(this._value);
-		// }
 	}
 
 	if (Utils.isFunction(onRejected)) {
 		if (this.isPending()) {
-			this._rejectedCallbacks.push(onRejected);
+			nextPromise._preRejectedCbs.push(onRejected);
 		}
-		// else {
-		// 	onRejected(this._value);
-		// }
 	}
 
 	this._promiseQueue.push(nextPromise);
