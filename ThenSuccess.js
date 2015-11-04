@@ -33,8 +33,8 @@ var ThenSuccess = function ThenSuccess(resolver) {
 	// 	onRejectedCallback: [fn, fn, fn...] 
 	// },... ]
 	that._queue = [];
-	that._preFullfilledCbs = [];
-	that._preRejectedCbs = [];
+	that._preFullfilledCb;
+	that._preRejectedCb;
 
 	that._promiseQueue = [];
 
@@ -75,39 +75,41 @@ ThenSuccess.prototype.reject = function(reason) {
 
 }
 
+
 ThenSuccess.prototype.afterTransition = function() {
 
+	var that = this;
 
-	if (this.isPending()) return;
 
-	while (this._promiseQueue.length) {
+	if (that.isPending()) return;
 
-		var promise = this._promiseQueue.shift();
+	while (that._promiseQueue.length) {
+
+		var promise = that._promiseQueue.shift();
 
 		try {
-			if (this.isFullfilled()) {
+			if (that.isFullfilled()) {
 
-				while (promise._preFullfilledCbs.length) {
-					var preFullfilledCb = promise._preFullfilledCbs.shift();
+				var result = promise._preFullfilledCb(that._value);
 
-					var result = preFullfilledCb(this._value);
+				promise.resolve(that._value);
 
-					// todo: 判断返回值类型
-				}
-
-				promise.resolve(this._value);
 			} else {
-				promise.reject(this._reason);
+
+				var result = promise._preRejectedCb(that._reason);
+
+				promise.resolve(that._reason);
 			}
 		} catch (e) {
-			// todo: ???
+
+			promise.reject(e);
 
 			continue;
 		}
 
 	}
 
-	this._promiseQueue = undefined;
+	that._promiseQueue = undefined;
 
 
 }
@@ -216,13 +218,13 @@ ThenSuccess.prototype.then = function(onFullfilled, onRejected) {
 
 	if (Utils.isFunction(onFullfilled)) {
 		if (this.isPending()) {
-			nextPromise._preFullfilledCbs.push(onFullfilled);
+			nextPromise._preFullfilledCb = onFullfilled;
 		}
 	}
 
 	if (Utils.isFunction(onRejected)) {
 		if (this.isPending()) {
-			nextPromise._preRejectedCbs.push(onRejected);
+			nextPromise._preRejectedCb = onRejected;
 		}
 	}
 
