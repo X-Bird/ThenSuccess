@@ -82,29 +82,27 @@ ThenSuccess.prototype.reject = function(reason) {
 
 ThenSuccess.prototype.afterTransition = function() {
 
-	var that = this;
 
+	if (this.isPending()) return;
 
-	if (that.isPending()) return;
+	while (this._promiseQueue.length) {
 
-	while (that._promiseQueue.length) {
-
-		var promise = that._promiseQueue.shift();
+		var promise = this._promiseQueue.shift();
 
 		try {
-			if (that.isFullfilled()) {
+			if (this.isFullfilled()) {
 
 				if (Utils.isFunction(promise._preFullfilledCb))
-					var result = promise._preFullfilledCb(that._value);
+					var result = promise._preFullfilledCb(this._value);
 
-				promise.resolve(that._value);
+				promise.resolve(this._value);
 
 			} else {
 
 				if (Utils.isFunction(promise._preRejectedCb))
-					var result = promise._preRejectedCb(that._reason);
+					var result = promise._preRejectedCb(this._reason);
 
-				promise.reject(that._reason);
+				promise.reject(this._reason);
 			}
 		} catch (e) {
 
@@ -115,7 +113,7 @@ ThenSuccess.prototype.afterTransition = function() {
 
 	}
 
-	that._promiseQueue = undefined;
+	this._promiseQueue = undefined;
 
 
 }
