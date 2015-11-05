@@ -7,9 +7,10 @@ var p = new ThenSuccess(function(resolve) {
 		resolve(++counter);
 	}, 1000);
 });
+var dummy;
 
 p
-.then(function(x){
+.then(dummy, function(x){
 	console.log('after resolve question:%d, do something', counter);
 })
 .then(function(x){

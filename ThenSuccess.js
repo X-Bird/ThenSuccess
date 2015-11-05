@@ -63,8 +63,10 @@ ThenSuccess.prototype.isFullfilled = function() {
 
 ThenSuccess.prototype.fullfillDirectly = function(value) {
 
-	this._value = value;
-	this.transTo('fullfilled');
+	if (this.isPending()) {
+		this._value = value;
+		this.transTo('fullfilled');
+	}
 
 }
 
@@ -92,15 +94,17 @@ ThenSuccess.prototype.afterTransition = function() {
 		try {
 			if (that.isFullfilled()) {
 
-				var result = promise._preFullfilledCb(that._value);
+				if (Utils.isFunction(promise._preFullfilledCb))
+					var result = promise._preFullfilledCb(that._value);
 
 				promise.resolve(that._value);
 
 			} else {
 
-				var result = promise._preRejectedCb(that._reason);
+				if (Utils.isFunction(promise._preRejectedCb))
+					var result = promise._preRejectedCb(that._reason);
 
-				promise.resolve(that._reason);
+				promise.reject(that._reason);
 			}
 		} catch (e) {
 
@@ -222,15 +226,11 @@ ThenSuccess.prototype.then = function(onFullfilled, onRejected) {
 	var nextPromise = new ThenSuccess();
 
 	if (Utils.isFunction(onFullfilled)) {
-		if (this.isPending()) {
 			nextPromise._preFullfilledCb = onFullfilled;
-		}
 	}
 
 	if (Utils.isFunction(onRejected)) {
-		if (this.isPending()) {
 			nextPromise._preRejectedCb = onRejected;
-		}
 	}
 
 	this._promiseQueue.push(nextPromise);
