@@ -93,14 +93,14 @@ ThenSuccess.prototype.afterTransition = function() {
 			if (this.isFullfilled()) {
 
 				if (Utils.isFunction(promise._preFullfilledCb))
-					var result = promise._preFullfilledCb(this._value);
+					var result = promise._preFullfilledCb.call(undefined, this._value);
 
 				promise.resolve(this._value);
 
 			} else {
 
 				if (Utils.isFunction(promise._preRejectedCb))
-					var result = promise._preRejectedCb(this._reason);
+					var result = promise._preRejectedCb.call(undefined, this._reason);
 
 				promise.reject(this._reason);
 			}
