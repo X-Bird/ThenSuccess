@@ -70,8 +70,10 @@ ThenSuccess.prototype.fullfillDirectly = function(value) {
 
 ThenSuccess.prototype.reject = function(reason) {
 
-	this._reason = reason;
-	this.transTo('rejected');
+	if (this.isPending()) {
+		this._reason = reason;
+		this.transTo('rejected');
+	}
 
 }
 
@@ -127,6 +129,9 @@ ThenSuccess.prototype.transTo = function(status) {
 
 // todo: this function need to be invoked recursively, be aware of stack overflow or redundancy of slef executions
 ThenSuccess.prototype.resolve = function(x) {
+
+
+	if (!this.isPending()) return;
 
 	// 2.3.1
 	if (this === x) {
