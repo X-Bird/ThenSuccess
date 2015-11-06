@@ -1,11 +1,9 @@
 var ThenSuccess = require('../ThenSuccess');
 
-var Promise = ThenSuccess;
-
 module.exports = {
 
     deferred: function () {
-        var promise = new Promise();
+        var promise = new ThenSuccess();
         return {
             promise: promise,
             resolve: function (value) {
@@ -13,6 +11,9 @@ module.exports = {
             },
             reject: function (reason) {
                 promise.reject(reason);
+            },
+            then: function(onFullfiled, onRejected) {
+                promise.then(onFullfiled, onRejected);
             }
         };
     }

@@ -21,6 +21,8 @@ var Utils = {
 
 
 var ThenSuccess = function ThenSuccess(resolver) {
+	"use strict";
+
 	var that = this;
 
 	that._state = 0; // peding: 0 fullfilled: 1 rejected: -1
@@ -92,17 +94,21 @@ ThenSuccess.prototype.afterTransition = function() {
 		try {
 			if (this.isFullfilled()) {
 
-				if (Utils.isFunction(promise._preFullfilledCb))
-					var result = promise._preFullfilledCb.call(undefined, this._value);
-
-				promise.resolve(this._value);
+				if (Utils.isFunction(promise._preFullfilledCb)) {
+					var result = promise._preFullfilledCb.apply(undefined, [this._value]);
+					promise.resolve(result);
+				}
+				else 
+					promise.fullfillDirectly(this._value);
 
 			} else {
 
-				if (Utils.isFunction(promise._preRejectedCb))
-					var result = promise._preRejectedCb.call(undefined, this._reason);
-
-				promise.reject(this._reason);
+				if (Utils.isFunction(promise._preRejectedCb)) {
+					var result = promise._preRejectedCb.apply(undefined, [this._reason]);
+					promise.resolve(result);
+				}
+				else
+					promise.reject(this._reason);
 			}
 		} catch (e) {
 
@@ -141,6 +147,8 @@ ThenSuccess.prototype.resolve = function(x) {
 		// I think... it's better to reject here directly
 
 		this.reject(new TypeError('...'));
+
+		return;
 	}
 
 	// 2.3.2
