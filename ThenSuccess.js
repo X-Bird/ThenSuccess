@@ -162,14 +162,14 @@ ThenSuccess.prototype.resolve = function(x) {
 		// 2.3.2.2
 		if (x.isFullfilled()) {
 			// fullfilled this promise with the same value
-			x.fullfillDirectly(this._value);
+			this.fullfillDirectly(x._value);
 
 		}
 
 		// 2.3.2.3
 		if (x.isRejected()) {
 			// eject this promise with the same reason
-			x.reject(this._reason);
+			this.fullfillDirectly(x._reason);
 		}
 	}
 
