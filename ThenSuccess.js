@@ -202,7 +202,11 @@ ThenSuccess.prototype.resolve = function(x) {
 		// why here have to let then be x.then...? need asking vilic
 
 		try {
-			var thenHandler = x.then;
+			var thenHandler;
+			if (x !== null)
+				thenHandler = x.then;
+			else
+				thenHandler = x;
 
 			// 2.3.3.3 // 这个地方有待深化理解
 			if (Utils.isFunction(thenHandler)) {
@@ -238,7 +242,7 @@ ThenSuccess.prototype.resolve = function(x) {
 
 	}
 	// 2.3.4
-	else if (typeof x !== 'object' && typeof x !== 'function') {
+	else {
 		this.fullfilled(x);
 	}
 }
