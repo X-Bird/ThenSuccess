@@ -42,7 +42,9 @@ var ThenSuccess = function ThenSuccess(resolver) {
 
 
 	try {
-		resolver(that.resolve.bind(this));
+		if (Utils.isFunction(resolver)) {
+			resolver(that.resolve.bind(this));
+		}
 	} catch (e) {
 		// todo: reject with a reason here
 	}
@@ -63,7 +65,7 @@ ThenSuccess.prototype.isFullfilled = function() {
 	return this._state === 1;
 }
 
-ThenSuccess.prototype.fullfillDirectly = function(value) {
+ThenSuccess.prototype.fullfilled = function(value) {
 
 	if (this.isPending()) {
 		this._value = value;
@@ -87,7 +89,7 @@ ThenSuccess.prototype.afterTransition = function() {
 
 	if (this.isPending()) return;
 
-	while (this._promiseQueue.length) {
+	while (this._promiseQueue && this._promiseQueue.length) {
 
 		var promise = this._promiseQueue.shift();
 
@@ -99,7 +101,7 @@ ThenSuccess.prototype.afterTransition = function() {
 					promise.resolve(result);
 				}
 				else 
-					promise.fullfillDirectly(this._value);
+					promise.fullfilled(this._value);
 
 			} else {
 
@@ -114,7 +116,6 @@ ThenSuccess.prototype.afterTransition = function() {
 
 			promise.reject(e);
 
-			continue;
 		}
 
 	}
@@ -138,6 +139,8 @@ ThenSuccess.prototype.transTo = function(status) {
 // todo: this function need to be invoked recursively, be aware of stack overflow or redundancy of slef executions
 ThenSuccess.prototype.resolve = function(x) {
 
+	var that = this;
+
 
 	if (!this.isPending()) return;
 
@@ -157,19 +160,34 @@ ThenSuccess.prototype.resolve = function(x) {
 		// 2.3.2.1
 		if (x.isPending()) {
 			// remain pending
+
+			// this._promiseQueue.push(x);
+
+			x.then(function(value) {
+				that.resolve(value);
+			}, function(reason) {
+				that.reject(reason);
+			});
+
+			// x._promiseQueue.push(this);
+
+			return ;
 		}
 
 		// 2.3.2.2
 		if (x.isFullfilled()) {
 			// fullfilled this promise with the same value
-			this.fullfillDirectly(x._value);
+			this.fullfilled(x._value);
+			return ;
 
 		}
 
 		// 2.3.2.3
 		if (x.isRejected()) {
 			// eject this promise with the same reason
-			this.fullfillDirectly(x._reason);
+			this.reject(x._reason);
+
+			return ;
 		}
 	}
 
@@ -205,7 +223,7 @@ ThenSuccess.prototype.resolve = function(x) {
 			// 2.3.3.4 
 			// if then is not a function, fufill promise with x
 			else {
-				this.fullfillDirectly(x);
+				this.fullfilled(x);
 				called = true;
 			}
 		} catch (e) {
@@ -221,7 +239,7 @@ ThenSuccess.prototype.resolve = function(x) {
 	}
 	// 2.3.4
 	else if (typeof x !== 'object' && typeof x !== 'function') {
-		this.fullfillDirectly(x);
+		this.fullfilled(x);
 	}
 }
 
