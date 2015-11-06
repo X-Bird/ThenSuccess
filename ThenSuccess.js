@@ -206,16 +206,16 @@ ThenSuccess.prototype.resolve = function(x) {
 
 			// 2.3.3.3 // 这个地方有待深化理解
 			if (Utils.isFunction(thenHandler)) {
-				thenHandler.call(x, function(result) {
+				thenHandler.call(x, function(y) {
 
 					if (!called) {
-						this.resolve(y);
+						that.resolve(y);
 						called = true;
 					}
 
-				}, function(reason) {
+				}, function(r) {
 					if (!called) {
-						this.reject(reason);
+						that.reject(r);
 						called = true;
 					}
 				});
