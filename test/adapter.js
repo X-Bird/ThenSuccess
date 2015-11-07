@@ -1,4 +1,4 @@
-var ThenSuccess = require('../ThenSuccess');
+var ThenSuccess = require('../thensuccess');
 
 module.exports = {
 
