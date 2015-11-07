@@ -1,4 +1,4 @@
-var ThenSuccess = require('../thensuccess');
+var ThenSuccess = require('../ThenSuccess');
 
 var counter = 0;
 var p = new ThenSuccess(function(resolve) {
